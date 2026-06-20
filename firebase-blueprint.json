@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with phone credentials and balance",
+      "type": "object",
+      "properties": {
+        "phone": { "type": "string" },
+        "password": { "type": "string" },
+        "referCode": { "type": "string" },
+        "balance": { "type": "number" }
+      },
+      "required": ["phone", "password", "balance"]
+    }
+  },
+  "firestore": {
+    "/users/{phone}": {
+      "schema": "User",
+      "description": "User profiles database"
+    }
+  }
+}
