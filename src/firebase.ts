@@ -32,6 +32,8 @@ export const registerUser = async (phone: string, password: string, referredBy: 
 
   let referrerPhoneToReward = '';
   let referrerCurrentBalance = 0;
+  let referrerCurrentReferralBalance = 0;
+  let referrerHasPackage = false;
 
   // Verify referral code if provided
   if (referredBy && referredBy.trim() !== '') {
@@ -44,6 +46,8 @@ export const registerUser = async (phone: string, password: string, referredBy: 
       const referrerDoc = snap.docs[0];
       referrerPhoneToReward = referrerDoc.id;
       referrerCurrentBalance = referrerDoc.data().balance || 0;
+      referrerCurrentReferralBalance = referrerDoc.data().referralBalance || 0;
+      referrerHasPackage = !!referrerDoc.data().hasActivePackage;
     }
   }
 
@@ -66,13 +70,14 @@ export const registerUser = async (phone: string, password: string, referredBy: 
 
   const nextCustomUid = await assignNextCustomUid();
 
-  // Initial bonus 50 for the new user, save assignedCode of the user
+  // Initial bonus 50 for the new user, goes to referralBalance
   const userData = { 
     phone, 
     password, 
     referCode: assignedCode, 
     referredBy: referredBy.trim() || null,
-    balance: 50,
+    balance: 0,
+    referralBalance: 50,
     customUid: nextCustomUid
   };
   
@@ -80,9 +85,15 @@ export const registerUser = async (phone: string, password: string, referredBy: 
 
   // Instantly reward the referrer with 50 TK
   if (referrerPhoneToReward) {
-    await updateDoc(doc(db, 'users', referrerPhoneToReward), {
-      balance: referrerCurrentBalance + 50
-    });
+    if (referrerHasPackage) {
+      await updateDoc(doc(db, 'users', referrerPhoneToReward), {
+        balance: referrerCurrentBalance + 50
+      });
+    } else {
+      await updateDoc(doc(db, 'users', referrerPhoneToReward), {
+        referralBalance: referrerCurrentReferralBalance + 50
+      });
+    }
   }
 
   return { ...userData, isNewRegistration: true };
@@ -171,15 +182,17 @@ export const buyUserPackage = async (phone: string, price: number, packageTitle:
     throw new Error('ব্যবহারকারী সন্ধান পাওয়া যায়নি!');
   }
   const currentBalance = snap.data().balance || 0;
+  const currentReferralBalance = snap.data().referralBalance || 0;
+  
   if (currentBalance < price) {
-    throw new Error(`আপনার পর্যাপ্ত ব্যালেন্স নেই! প্যাকেজের দাম ${price} ৳, আপনার ব্যালেন্স ${currentBalance} ৳। অনুগ্রহ করে ডিপোজিট করুন।`);
+    throw new Error(`আপনার ডিপোজিট বা কাজের ব্যালেন্স পর্যাপ্ত নেই! প্যাকেজের দাম ${price} ৳, আপনার ব্যালেন্স ${currentBalance} ৳। (রেফার বোনাস দিয়ে প্যাকেজ কেনা যায় না, ডিপোজিট করে প্যাকেজ কিনলে রেফার বোনাস মূল ব্যালেন্সে যোগ হবে)।`);
   }
 
   // Determine daily income rate based on price
   let dailyRate = 0;
   let dailyBonus = 0;
   if (price === 150) {
-    dailyRate = 15;
+    dailyRate = 20;
     dailyBonus = 1;
   } else if (price === 250) {
     dailyRate = 25;
@@ -199,26 +212,60 @@ export const buyUserPackage = async (phone: string, price: number, packageTitle:
     dailyBonus = Math.floor(price / 100);
   }
   
+  const balanceAfterPurchaseAndReferralUnlock = currentBalance - price + currentReferralBalance;
+
+  const existingPackages = snap.data().purchasedPackages || [];
+  
+  const newPackage = {
+    id: Date.now().toString(),
+    title: packageTitle,
+    price: price,
+    dailyRate: dailyRate,
+    purchasedAt: new Date().toISOString(),
+    claimedCount: 0,
+    totalEarned: 0
+  };
+
+  const updatedPackages = [...existingPackages, newPackage];
+  // Calculate combined daily rate
+  const combinedDailyRate = updatedPackages.reduce((acc, pkg) => acc + pkg.dailyRate, 0);
+
+  // Note: we still set activePackageTitle to the latest one or maybe "Multiple Packages" if > 1
+  const displayTitle = updatedPackages.length > 1 ? `${updatedPackages.length} টি প্যাকেজ` : packageTitle;
+
+  // We should also calculate cumulative daily bonus
+  let combinedDailyBonus = 0;
+  if (snap.data().dailyBonusRate) {
+    // wait we can just accumulate standard dailyBonus
+    combinedDailyBonus = (snap.data().dailyBonusRate || 0) + dailyBonus;
+  } else {
+    combinedDailyBonus = dailyBonus;
+  }
+
   await updateDoc(userRef, {
-    balance: currentBalance - price,
+    balance: balanceAfterPurchaseAndReferralUnlock,
+    referralBalance: 0,
     hasActivePackage: true,
-    activePackageTitle: packageTitle,
-    packagePrice: price,
-    dailyIncomeRate: dailyRate,
-    dailyBonusRate: dailyBonus,
-    lastClaimedDate: null,
-    lastBonusClaimedDate: null
+    activePackageTitle: displayTitle,
+    packagePrice: price,  // Just keeping the latest price for legacy fields
+    dailyIncomeRate: combinedDailyRate,
+    dailyBonusRate: combinedDailyBonus,
+    purchasedPackages: updatedPackages,
+    // Do not reset lastClaimedDate if they already have an active package, otherwise they can claim multiple times!
+    // But previously it reset it. Let's keep existing logic but just comment... actually, if we reset it, they can claim instantly again.
+    // user requested to see how many days it has been.
+    ...(existingPackages.length === 0 ? { lastClaimedDate: null, lastClaimedAt: null, lastBonusClaimedDate: null, lastBonusClaimedAt: null } : {})
   });
 
   return { 
-    balance: currentBalance - price, 
+    balance: balanceAfterPurchaseAndReferralUnlock, 
+    referralBalance: 0,
     hasActivePackage: true, 
-    activePackageTitle: packageTitle,
+    activePackageTitle: displayTitle,
     packagePrice: price,
-    dailyIncomeRate: dailyRate,
-    dailyBonusRate: dailyBonus,
-    lastClaimedDate: null,
-    lastBonusClaimedDate: null
+    dailyIncomeRate: combinedDailyRate,
+    dailyBonusRate: combinedDailyBonus,
+    purchasedPackages: updatedPackages
   };
 };
 
@@ -257,31 +304,41 @@ export const claimDailyIncome = async (phone: string, isTestOverride: boolean = 
   }
 
   const now = new Date();
-  const currentHour = now.getHours();
 
-  if (!isTestOverride && currentHour < 20) {
-    throw new Error('আজকের ডেইলি ইনকাম রাত ০৮:০০ টার পর ক্লেম করতে পারবেন!');
+  // 24-hours gap checker
+  if (data.lastClaimedAt) {
+    const lastClaim = new Date(data.lastClaimedAt);
+    const diffMs = now.getTime() - lastClaim.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (!isTestOverride && diffHours < 24) {
+      throw new Error('আপনি গত ২৪ ঘণ্টার মধ্যে একবার প্যাকেজের আয় ক্লেম করেছেন। ২৪ ঘন্টা পূর্ণ হলে আবার ক্লেম করতে পারবেন!');
+    }
   }
 
   const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
-  if (data.lastClaimedDate === todayStr) {
-    throw new Error('আপনি আজকের ইনকাম ইতিমধ্যেই সফলভাবে ক্লেম করেছেন!');
-  }
-
   const currentBalance = data.balance || 0;
   const newBalance = currentBalance + dailyRate;
+
+  let updatedPurchasedPackages = data.purchasedPackages || [];
+  updatedPurchasedPackages = updatedPurchasedPackages.map((pkg: any) => ({
+    ...pkg,
+    claimedCount: (pkg.claimedCount || 0) + 1,
+    totalEarned: (pkg.totalEarned || 0) + (pkg.dailyRate || 0)
+  }));
 
   await updateDoc(userRef, {
     balance: newBalance,
     lastClaimedDate: todayStr,
-    lastClaimedAt: now.toISOString()
+    lastClaimedAt: now.toISOString(),
+    purchasedPackages: updatedPurchasedPackages
   });
 
   return {
     balance: newBalance,
     lastClaimedDate: todayStr,
-    lastClaimedAt: now.toISOString()
+    lastClaimedAt: now.toISOString(),
+    purchasedPackages: updatedPurchasedPackages
   };
 };
 
@@ -312,16 +369,20 @@ export const claimNightlyBonus = async (phone: string, isTestOverride: boolean =
   }
 
   const now = new Date();
-  const currentHour = now.getHours();
 
-  // Removed time restriction as per user request
-  // if (!isTestOverride && currentHour < 20) {
-  //   throw new Error('এই বোনাসটি শুধুমাত্র প্রতিদিন রাত ০৮:০০ টার পর দাবি করা যাবে!');
-  // }
+  // 24-hours gap checker
+  if (data.lastBonusClaimedAt) {
+    const lastClaim = new Date(data.lastBonusClaimedAt);
+    const diffMs = now.getTime() - lastClaim.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (!isTestOverride && diffHours < 24) {
+      throw new Error('আপনি গত ২৪ ঘণ্টার মধ্যে একবার প্যাকেজ বোনাস দাবি করেছেন। ২৪ ঘন্টা পূর্ণ হলে আবার দাবি করতে পারবেন!');
+    }
+  }
 
   const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
-  if (data.lastBonusClaimedDate === todayStr) {
+  if (data.lastBonusClaimedDate === todayStr && !data.lastBonusClaimedAt) {
     throw new Error('আপনি আজকের প্যাকেজ বোনাস ইতিমধ্যেই সফলভাবে দাবি করেছেন!');
   }
 

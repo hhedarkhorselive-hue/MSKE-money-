@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Info, X, Gift } from 'lucide-react';
 import Auth from './components/Auth';
 import Header from './components/layout/Header';
@@ -18,6 +19,9 @@ import Admin from './components/pages/Admin';
 import { getUserDataByPhone } from './firebase';
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [user, setUser] = useState<any | null>(() => {
     try {
       const saved = localStorage.getItem('nagor_user');
@@ -30,7 +34,6 @@ export default function App() {
   const [page, setPage] = useState('home');
   const [accountAction, setAccountAction] = useState<'none' | 'deposit' | 'withdraw' | 'deposit_history' | 'withdraw_history'>('none');
   const [showBalance, setShowBalance] = useState(false);
-  const [isAdminView, setIsAdminView] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [fadeSplash, setFadeSplash] = useState(false);
   
@@ -122,6 +125,19 @@ export default function App() {
     setTimeout(() => { setShowBalance(false); }, 4000);
   };
 
+  if (location.pathname === '/admin') {
+    return (
+      <div className="w-full min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-slate-100 my-8">
+          <Admin 
+            currentUser={user} 
+            onClose={() => navigate('/')} 
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (showSplash) {
     return (
       <div className={`w-full min-h-screen fixed inset-0 z-[100] flex items-center justify-center transition-all duration-1000 ease-in-out ${fadeSplash ? 'opacity-0 scale-110 pointer-events-none blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
@@ -164,25 +180,12 @@ export default function App() {
     );
   }
 
-  if (isAdminView) {
-    return (
-      <div className="w-full min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-slate-100 my-8">
-          <Admin 
-            currentUser={user} 
-            onClose={() => setIsAdminView(false)} 
-          />
-        </div>
-      </div>
-    );
-  }
-
   if (!user) {
     return (
       <>
         <Auth 
           onLogin={handleLogin} 
-          onOpenAdmin={() => setIsAdminView(true)} 
+          onOpenAdmin={() => navigate('/admin')} 
         />
         {customAlert && (
           <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm transition-all duration-300">
@@ -303,7 +306,7 @@ export default function App() {
               setUser(updated);
               localStorage.setItem('nagor_user', JSON.stringify(updated));
             }} 
-            onOpenAdmin={() => setIsAdminView(true)}
+            onOpenAdmin={() => navigate('/admin')}
             initialAction={accountAction}
           />
         )}

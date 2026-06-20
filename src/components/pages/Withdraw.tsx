@@ -113,8 +113,8 @@ export default function Withdraw({ user, onUpdateUser, onClose, onOpenHistory }:
 
   const getLogos = () => {
     return {
-      Nagad: 'https://i.postimg.cc/854NKY48/images-(16).jpg',
-      Bkash: 'https://i.postimg.cc/Bv1jzJPW/unnamed.jpg',
+      Nagad: 'https://i.postimg.cc/Bv1jzJPW/unnamed.jpg',
+      Bkash: 'https://i.postimg.cc/854NKY48/images-(16).jpg',
       Upay: 'https://i.postimg.cc/mDYtbVSm/unnamed.png',
       Cellfin: 'https://i.postimg.cc/sxKxWXqR/images-(17).jpg'
     };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gift, Coins, Trophy, Sparkles, Star, Heart, ArrowRight, CheckCircle2, ChevronRight, HelpCircle, AlertCircle, Sparkle } from 'lucide-react';
+import { Gift, Coins, Trophy, Sparkles, Star, Heart, ArrowRight, CheckCircle2, ChevronRight, HelpCircle, AlertCircle, Sparkle, Send } from 'lucide-react';
 import { db, claimNightlyBonus } from '../../firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
@@ -20,7 +20,18 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
     if (user?.lastExtraBonusDate === todayStr) {
       setBonusClaimedToday(true);
     }
-    if (user?.lastBonusClaimedDate === todayStr) {
+    
+    // 24 Hour check for package nightly bonus
+    if (user?.lastBonusClaimedAt) {
+      const lastClaim = new Date(user.lastBonusClaimedAt);
+      const diffMs = new Date().getTime() - lastClaim.getTime();
+      if (diffMs < 24 * 60 * 60 * 1000) {
+        setNightlyClmToday(true);
+      } else {
+        setNightlyClmToday(false);
+      }
+    } else if (user?.lastBonusClaimedDate === todayStr) {
+      // Fallback for legacy data before lastBonusClaimedAt existed
       setNightlyClmToday(true);
     }
   }, [user, todayStr]);
@@ -108,11 +119,11 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
   };
 
   const bonusPoints = [
-    { title: '১৫০ টাকার প্যাকেজ', subtitle: 'প্রতিদিন রাত ০৮:০০ টায় ১ টাকা আয়', reward: '১ ৳ / দিন' },
-    { title: '২৫০ টাকার প্যাকেজ', subtitle: 'প্রতিদিন রাত ০৮:০০ টায় ২ টাকা আয়', reward: '২ ৳ / দিন' },
-    { title: '৩০০ টাকার প্যাকেজ', subtitle: 'প্রতিদিন রাত ০৮:০০ টায় ৩ টাকা আয়', reward: '৩ ৳ / দিন' },
-    { title: '৫০০ টাকার প্যাকেজ', subtitle: 'প্রতিদিন রাত ০৮:০০ টায় ৫ টাকা আয়', reward: '৫ ৳ / দিন' },
-    { title: '৮৪০ টাকার প্যাকেজ', subtitle: 'প্রতিদিন রাত ০৮:০০ টায় ৮ টাকা আয়', reward: '৮ ৳ / দিন' },
+    { title: '১৫০ টাকার প্যাকেজ', subtitle: '২৪ ঘন্টা পর পর ১ টাকা আয়', reward: '১ ৳ / দিন' },
+    { title: '২৫০ টাকার প্যাকেজ', subtitle: '২৪ ঘন্টা পর পর ২ টাকা আয়', reward: '২ ৳ / দিন' },
+    { title: '৩০০ টাকার প্যাকেজ', subtitle: '২৪ ঘন্টা পর পর ৩ টাকা আয়', reward: '৩ ৳ / দিন' },
+    { title: '৫০০ টাকার প্যাকেজ', subtitle: '২৪ ঘন্টা পর পর ৫ টাকা আয়', reward: '৫ ৳ / দিন' },
+    { title: '৮৪০ টাকার প্যাকেজ', subtitle: '২৪ ঘন্টা পর পর ৮ টাকা আয়', reward: '৮ ৳ / দিন' },
   ];
 
   return (
@@ -136,6 +147,31 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
 
       {/* Interactive Daily Extra Gift Box */}
       <div className="bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-sm text-center space-y-4">
+        
+        {/* Telegram Promo Banner Inside the Box */}
+        <a 
+          href="https://t.me/+svaglTDhjKZkYzVl" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block bg-gradient-to-r from-sky-500 to-blue-500 rounded-2xl p-4 text-white shadow-lg shadow-sky-200 transition-all active:scale-[0.98] relative overflow-hidden text-left mb-6"
+        >
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shrink-0">
+              <Send className="text-white fill-current" size={24} />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm flex items-center gap-1">অফিসিয়াল টেলিগ্রাম গ্রুপ <CheckCircle2 size={12} className="text-sky-200" /></h4>
+              <p className="text-[10px] text-sky-50 leading-tight mt-0.5">
+                লাইভ ক্লাসে জয়েন হলে আরো বেশি টাকা ইনকাম করতে পারবেন! যুক্ত হতে এখানে ক্লিক করুন।
+              </p>
+            </div>
+            <div className="ml-auto bg-white text-sky-500 w-8 h-8 rounded-full flex items-center justify-center shrink-0">
+              <ChevronRight size={18} />
+            </div>
+          </div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+        </a>
+
         <div className="inline-flex p-4 bg-orange-50 rounded-full text-orange-500 relative">
           <Gift size={32} className={bonusClaimedToday ? '' : 'animate-bounce'} />
           {!bonusClaimedToday && (
@@ -167,13 +203,13 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
         </div>
       </div>
 
-      {/* Nightly 8:00 PM Active Package Bonus Section */}
+      {/* Nightly 24h Active Package Bonus Section */}
       <div className="bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-sm space-y-4 animate-fade-in">
         <div className="flex items-center justify-between">
           <h4 className="font-bold text-slate-800 flex items-center gap-2">
-            <Coins className="text-amber-500" size={22} /> প্যাকেজ বোনাস (রাত ০৮:০০ টায়)
+            <Coins className="text-amber-500" size={22} /> প্যাকেজ বোনাস (২৪ ঘণ্টা পর পর)
           </h4>
-          <span className="text-[10px] bg-indigo-55 text-indigo-700 font-bold px-2 py-0.5 rounded-full border border-indigo-100 uppercase">
+          <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full border border-indigo-100 uppercase">
             {user?.hasActivePackage ? 'সক্রিয় প্যাকেজ' : 'কোনো প্যাকেজ নেই'}
           </span>
         </div>
@@ -197,7 +233,7 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
 
             {nightlyClmToday ? (
               <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 px-4 py-3.5 rounded-2xl text-xs font-bold leading-normal text-center">
-                ✅ অভিনন্দন! আপনি আজকের রাত ০৮:০০ টার বাড়তি বোনাসটি সফলভাবে দাবি করেছেন। আগামীকাল আবার রাত ০৮:০০ টায় চেক করতে আসুন!
+                ✅ অভিনন্দন! আপনি আপনার প্যাকেজের বাড়তি বোনাসটি সফলভাবে দাবি করেছেন। ২৪ ঘণ্টা পর আবার ক্লেম করতে পারবেন।
               </div>
             ) : (
               <button
@@ -205,7 +241,7 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
                 disabled={nightlyClaiming}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2"
               >
-                {nightlyClaiming ? 'যাচাই হচ্ছে...' : 'রাত ০৮:০০ টার বোনাস ক্লেম করুন'}
+                {nightlyClaiming ? 'যাচাই হচ্ছে...' : 'প্যাকেজ বোনাস ক্লেম করুন'}
               </button>
             )}
           </div>
@@ -214,7 +250,7 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
             <AlertCircle size={24} className="mx-auto text-indigo-500 mb-2 animate-pulse" />
             <p className="text-xs font-bold text-slate-700">কোনো সক্রিয় প্যাকেজ পাওয়া যায়নি!</p>
             <p className="text-[11px] text-slate-400 mt-1 max-w-xs mx-auto leading-normal">
-              রাত ৮:০০ টার দৈনিক বিশেষ বোনাস দাবি করতে হলে হোম পেজ থেকে যেকোনো একটি প্যাকেজ চালু করতে হবে।
+              প্যাকেজের দৈনিক বিশেষ বোনাস দাবি করতে হলে হোম পেজ থেকে যেকোনো একটি প্যাকেজ চালু করতে হবে।
             </p>
           </div>
         )}
@@ -226,7 +262,7 @@ export default function Bonus({ user, onUpdateUser }: { user: any; onUpdateUser:
           <h4 className="font-bold text-slate-800 flex items-center gap-1.5">
             <Trophy className="text-amber-500" size={20} /> প্যাকেজ ডেইলি আয় তালিকা:
           </h4>
-          <p className="text-[11px] text-slate-400 mt-0.5">প্রতিদিন রাত ০৮:০০ টায় সরাসরি আপনার একাউন্টে জমা হবে</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">প্রতি ২৪ ঘণ্টা পর পর সরাসরি আপনার একাউন্টে ক্লেম করতে পারবেন</p>
         </div>
 
         <div className="divide-y divide-slate-100/80">

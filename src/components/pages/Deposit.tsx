@@ -83,24 +83,24 @@ export default function Deposit({ user, onUpdateUser, onClose, onOpenHistory }: 
     if (lang === 'বাং') {
       switch (method) {
         case 'BKASH':
-          return 'বিকাশ ট্রানজেকশন আইডি অবশ্যই ৯ বা ১০ অক্ষরের Alphanumeric হতে হবে। (যেমন: D9A7D3F2K বা DK4M8P1Q7R)';
+          return 'আপনার ট্রানজেকশন আইডিটি ভুল হয়েছে, দয়া করে সঠিক ট্রানজেকশন আইডি দিন।';
         case 'NAGAD':
-          return 'নগদ ট্রানজেকশন আইডি অবশ্যই ১০ অক্ষরের হতে হবে এবং এটি "NG" দিয়ে শুরু হতে হবে। (যেমন: NG5X2C8V1B)';
+          return 'আপনার ট্রানজেকশন আইডিটি ভুল হয়েছে, দয়া করে সঠিক ট্রানজেকশন আইডি দিন।';
         case 'UPAY':
-          return 'ইউপে ট্রানজেকশন আইডি অবশ্যই ১০ অক্ষরের হতে হবে এবং এটি "UP" দিয়ে শুরু হতে হবে। (যেমন: UP3K8R2M5N)';
+          return 'আপনার ট্রানজেকশন আইডিটি ভুল হয়েছে, দয়া করে সঠিক ট্রানজেকশন আইডি দিন।';
         case 'CELLFIN':
-          return 'সেলফিন ট্রানজেকশন আইডি অবশ্যই ১০ অক্ষরের হতে হবে এবং এটি "SF" দিয়ে শুরু হতে হবে। (যেমন: SF8P4D2K9X)';
+          return 'আপনার ট্রানজেকশন আইডিটি ভুল হয়েছে, দয়া করে সঠিক ট্রানজেকশন আইডি দিন।';
       }
     } else {
       switch (method) {
         case 'BKASH':
-          return 'bKash Transaction ID must be 9 or 10 alphanumeric characters. (e.g., D9A7D3F2K or DK4M8P1Q7R)';
+          return 'Your Transaction ID format is incorrect. Please enter a valid Transaction ID.';
         case 'NAGAD':
-          return 'Nagad Transaction ID must be 10 characters and start with "NG". (e.g., NG5X2C8V1B)';
+          return 'Your Transaction ID format is incorrect. Please enter a valid Transaction ID.';
         case 'UPAY':
-          return 'Upay Transaction ID must be 10 characters and start with "UP". (e.g., UP3K8R2M5N)';
+          return 'Your Transaction ID format is incorrect. Please enter a valid Transaction ID.';
         case 'CELLFIN':
-          return 'Cellfin Transaction ID must be 10 characters and start with "SF". (e.g., SF8P4D2K9X)';
+          return 'Your Transaction ID format is incorrect. Please enter a valid Transaction ID.';
       }
     }
   };
@@ -149,9 +149,9 @@ export default function Deposit({ user, onUpdateUser, onClose, onOpenHistory }: 
 
       if (duplicateFound) {
         if (lang === 'বাং') {
-          alert('🚫 এই ট্রানজেকশন আইডিটি ইতিমধ্যে একবার ব্যবহার করা হয়েছে! একই ট্র্যাকার আইডি দিয়ে দুইবার পেমেন্ট করা সম্ভব নয়।');
+          alert('🚫 আপনার ট্রানজেকশন আইডিটি ইতিমধ্যে একবার ব্যবহার করা হয়েছে! দয়া করে সঠিক ট্রানজেকশন আইডি দিন।');
         } else {
-          alert('🚫 This Transaction ID has already been used! You cannot submit the same transaction ID twice.');
+          alert('🚫 This Transaction ID has already been used! Please enter a valid Transaction ID.');
         }
         setLoading(false);
         return;
@@ -224,7 +224,7 @@ export default function Deposit({ user, onUpdateUser, onClose, onOpenHistory }: 
         return {
           name: 'Nagad',
           bnName: 'নগদ',
-          logo: 'https://i.postimg.cc/VkvrjqYL/images-(16).jpg',
+          logo: 'https://i.postimg.cc/Bv1jzJPW/unnamed.jpg',
           color: '#ef4444',
           accentBg: '#fff0e6'
         };
@@ -965,7 +965,7 @@ export default function Deposit({ user, onUpdateUser, onClose, onOpenHistory }: 
               onClick={() => setSelectedMethod('NAGAD')}
             >
               <div className="logo-container">
-                <img referrerPolicy="no-referrer" src="https://i.postimg.cc/VkvrjqYL/images-(16).jpg" alt="Nagad" className="logo-img" />
+                <img referrerPolicy="no-referrer" src="https://i.postimg.cc/Bv1jzJPW/unnamed.jpg" alt="Nagad" className="logo-img" />
               </div>
               <span className="method-name">Nagad</span>
             </div>

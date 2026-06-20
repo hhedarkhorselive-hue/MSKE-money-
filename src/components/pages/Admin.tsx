@@ -27,6 +27,10 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
   const [investigateUid, setInvestigateUid] = useState('');
   const [diagnosedUser, setDiagnosedUser] = useState<any | null>(null);
   const [diagnosedIssues, setDiagnosedIssues] = useState<string[]>([]);
+  
+  // Custom Confirm modals for withdraws (bypassing window.confirm in iframe)
+  const [confirmApproveModal, setConfirmApproveModal] = useState<any | null>(null);
+  const [confirmRejectModal, setConfirmRejectModal] = useState<any | null>(null);
 
   // Correct master PIN
   const MASTER_PIN = '889900';
@@ -169,15 +173,19 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
   };
 
   // HANDLE WITHDRAW APPROVE
-  const handleApproveWithdraw = async (item: any) => {
-    const confirmAction = window.confirm(`আপনি কি এই ${item.amount} ৳ উইথড্র রিকোয়েস্টটি সফল করতে চান?\nনম্বর: ${item.phone} (${item.method})`);
-    if (!confirmAction) return;
+  const handleApproveWithdraw = (item: any) => {
+    setConfirmApproveModal(item);
+  };
 
+  const executeApproveWithdraw = async () => {
+    const item = confirmApproveModal;
+    if (!item) return;
     try {
       const userDocRef = doc(db, 'users', item.userPhone);
       const userSnap = await getDoc(userDocRef);
       if (!userSnap.exists()) {
         alert("ব্যবহারকারী খুঁজে পাওয়া যায়নি!");
+        setConfirmApproveModal(null);
         return;
       }
 
@@ -198,19 +206,25 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
     } catch (error: any) {
       console.error(error);
       alert("উইথড্র অনুমোদন করতে ব্যর্থ হয়েছে: " + error.message);
+    } finally {
+      setConfirmApproveModal(null);
     }
   };
 
   // HANDLE WITHDRAW REJECT (With instant balance refund!)
-  const handleRejectWithdraw = async (item: any) => {
-    const confirmAction = window.confirm(`আপনি কি এই ${item.amount} ৳ উইথড্র রিকোয়েস্টটি প্রত্যাখ্যান ও রিফান্ড করতে চান?\nনম্বর: ${item.phone}`);
-    if (!confirmAction) return;
+  const handleRejectWithdraw = (item: any) => {
+    setConfirmRejectModal(item);
+  };
 
+  const executeRejectWithdraw = async () => {
+    const item = confirmRejectModal;
+    if (!item) return;
     try {
       const userDocRef = doc(db, 'users', item.userPhone);
       const userSnap = await getDoc(userDocRef);
       if (!userSnap.exists()) {
         alert("ব্যবহারকারী খুঁজে পাওয়া যায়নি!");
+        setConfirmRejectModal(null);
         return;
       }
 
@@ -235,6 +249,8 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
     } catch (error: any) {
       console.error(error);
       alert("উইথড্র বাতিল করতে ব্যর্থ হয়েছে: " + error.message);
+    } finally {
+      setConfirmRejectModal(null);
     }
   };
 
@@ -822,6 +838,65 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
             >
               {updatingUser ? 'সংরক্ষণ করা হচ্ছে...' : 'সংরক্ষণ করুন'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Modals for Withdrawals */}
+      {confirmApproveModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2rem] w-full max-w-sm p-6 shadow-2xl relative space-y-4">
+            <h3 className="text-xl font-extrabold text-slate-800 text-center">উইথড্র সফল নিশ্চিতকরণ</h3>
+            <p className="text-sm text-slate-600 font-medium text-center">
+              আপনি কি এই <strong>{confirmApproveModal.amount} ৳</strong> উইথড্র রিকোয়েস্টটি সফল করতে চান?
+            </p>
+            <div className="bg-indigo-50 p-4 rounded-2xl text-xs space-y-1 font-mono">
+              <p><strong>নম্বর:</strong> {confirmApproveModal.phone}</p>
+              <p><strong>মেথড:</strong> {confirmApproveModal.method}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <button 
+                onClick={() => setConfirmApproveModal(null)}
+                className="py-3 bg-red-100 text-red-700 font-bold rounded-xl active:scale-95 transition"
+              >
+                বাতিল করুন
+              </button>
+              <button 
+                onClick={executeApproveWithdraw}
+                className="py-3 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition flex items-center justify-center gap-1"
+              >
+                <CheckCircle size={14} /> রিকোয়েস্ট সফল
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmRejectModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2rem] w-full max-w-sm p-6 shadow-2xl relative space-y-4">
+            <h3 className="text-xl font-extrabold text-slate-800 text-center">উইথড্র রিজেক্ট ও রিফান্ড</h3>
+            <p className="text-sm text-slate-600 font-medium text-center">
+              আপনি কি এই <strong>{confirmRejectModal.amount} ৳</strong> উইথড্র রিকোয়েস্টটি প্রত্যাখান ও ব্যবহারকারীর একাউন্টে রিফান্ড করতে চান?
+            </p>
+            <div className="bg-rose-50 p-4 rounded-2xl text-xs space-y-1 font-mono text-rose-800">
+              <p><strong>নম্বর:</strong> {confirmRejectModal.phone}</p>
+              <p><strong>রিফান্ড পরিমাণ:</strong> {confirmRejectModal.amount} ৳</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <button 
+                onClick={() => setConfirmRejectModal(null)}
+                className="py-3 bg-slate-100 text-slate-700 font-bold rounded-xl active:scale-95 transition"
+              >
+                বাতিল করুন
+              </button>
+              <button 
+                onClick={executeRejectWithdraw}
+                className="py-3 bg-rose-600 text-white font-bold rounded-xl active:scale-95 transition flex items-center justify-center gap-1"
+              >
+                <XCircle size={14} /> রিজেক্ট করুন
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -28,7 +28,7 @@ export default function Home({
   }, []);
 
   const packages = [
-    { id: 3, title: 'সবুজ দ্বীপ প্যাকেজ', price: 150, daily: 15, duration: 365, tier: 'Basic', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80' },
+    { id: 3, title: 'সবুজ দ্বীপ প্যাকেজ', price: 150, daily: 20, duration: 365, tier: 'Basic', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80' },
     { id: 4, title: 'রূপালী নদী প্যাকেজ', price: 250, daily: 25, duration: 365, tier: 'Standard', img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80' },
     { id: 5, title: 'সোনার হরিণ প্যাকেজ', price: 300, daily: 30, duration: 365, tier: 'Classic', img: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=600&q=80' },
     { id: 1, title: 'সাপের মণি শিব প্যাকেজ', price: 500, daily: 40, duration: 365, tier: 'Starter', img: 'https://i.postimg.cc/WbsmDYtg/file-0000000058387207abcc303bd37095ad.png' },
@@ -43,7 +43,7 @@ export default function Home({
     if (buyingId !== null) return;
 
     if ((user.balance || 0) < pkg.price) {
-      alert(`আপনার পর্যাপ্ত ব্যালেন্স নেই! প্যাকেজের দাম ${pkg.price} ৳, আপনার বর্তমান ব্যালেন্স ${(user.balance || 0).toFixed(2)} ৳। সরাসরি ডিপোজিট পেজে নিয়ে যাওয়া হচ্ছে...`);
+      alert(`আপনার ডিপোজিট বা মূল ব্যালেন্স পর্যাপ্ত নেই! প্যাকেজের দাম ${pkg.price} ৳, আপনার মূল ব্যালেন্স ${(user.balance || 0).toFixed(2)} ৳। (রেফার বোনাস দিয়ে প্যাকেজ কেনা যায় না, ডিপোজিট করে প্যাকেজ কিনলে রেফার বোনাস মূল ব্যালেন্সে যোগ হবে)। সরাসরি ডিপোজিট পেজে নিয়ে যাওয়া হচ্ছে...`);
       onNavigateToDeposit();
       return;
     }

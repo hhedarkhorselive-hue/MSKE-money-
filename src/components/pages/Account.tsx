@@ -520,16 +520,28 @@ export default function Account({
 
         {/* White Balance & Buttons Board */}
         <div className="white-board">
-          <div className="balance-title">Total balance</div>
-          <div className="balance-row">
-            <span className="amount">৳{(user?.balance || 0).toFixed(2)}</span>
-            <button 
-              className={`refresh-icon-btn ${refreshing ? 'animate-spin' : ''}`} 
-              onClick={handleRefreshBalance}
-              title="রিফ্রেশ করুন"
-            >
-              <RefreshCw size={16} />
-            </button>
+          <div className="flex justify-between items-end">
+            <div>
+              <div className="balance-title">Total balance</div>
+              <div className="balance-row">
+                <span className="amount">৳{(user?.balance || 0).toFixed(2)}</span>
+                <button 
+                  className={`refresh-icon-btn ${refreshing ? 'animate-spin' : ''}`} 
+                  onClick={handleRefreshBalance}
+                  title="রিফ্রেশ করুন"
+                >
+                  <RefreshCw size={16} />
+                </button>
+              </div>
+            </div>
+            
+            {(user?.referralBalance || 0) > 0 && (
+              <div className="text-right pb-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">রেফার বোনাস</p>
+                <div className="font-mono font-bold text-amber-500 text-sm">৳{(user?.referralBalance || 0).toFixed(2)}</div>
+                <p className="text-[8px] text-slate-400 mt-0.5 leading-tight max-w-[100px] text-right">ডিপোজিট করে প্যাকেজ কিনলে এই টাকা মূল ব্যালেন্সে যোগ হবে</p>
+              </div>
+            )}
           </div>
           
           {/* Main Action Grid */}
