@@ -940,7 +940,7 @@ export default function Account({
             onClick={onOpenAdmin}
             className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 active:scale-95 transition-all mt-1 cursor-pointer bg-transparent border-none outline-none flex items-center gap-1 hover:underline"
           >
-            🛡️ এডমিন প্যানেল প্রবেশ করুন
+            HTS
           </button>
         </div>
 

@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { AlertCircle, CheckCircle2, Info, X, Gift } from 'lucide-react';
 import Auth from './components/Auth';
 import Header from './components/layout/Header';
 import Nav from './components/layout/Nav';
@@ -32,6 +33,27 @@ export default function App() {
   const [isAdminView, setIsAdminView] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [fadeSplash, setFadeSplash] = useState(false);
+  
+  // Custom Alert and Popup State
+  const [customAlert, setCustomAlert] = useState<{message: string, type: 'success'|'error'|'info'} | null>(null);
+  const [showWelcomeBonus, setShowWelcomeBonus] = useState(false);
+
+  useEffect(() => {
+    // Override window.alert
+    const originalAlert = window.alert;
+    window.alert = (message: string) => {
+      let type: 'success' | 'error' | 'info' = 'info';
+      if (message.includes('🎉') || message.includes('success') || message.includes('সফল') || message.includes('অভিনন্দন')) {
+        type = 'success';
+      } else if (message.includes('ত্রুটি') || message.includes('❌') || message.includes('Error') || message.includes('ভুল') || message.includes('দুঃখিত') || message.includes('Failed') || message.includes('wrong') || message.includes('🚫')) {
+        type = 'error';
+      }
+      setCustomAlert({ message, type });
+    };
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, []);
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => {
@@ -83,6 +105,11 @@ export default function App() {
   const handleLogin = (userData: any) => {
     setUser(userData);
     localStorage.setItem('nagor_user', JSON.stringify(userData));
+    if (userData.isNewRegistration) {
+      setTimeout(() => {
+        setShowWelcomeBonus(true);
+      }, 500); // Wait a half second inside the app
+    }
   };
 
   const handleLogout = () => {
@@ -152,15 +179,88 @@ export default function App() {
 
   if (!user) {
     return (
-      <Auth 
-        onLogin={handleLogin} 
-        onOpenAdmin={() => setIsAdminView(true)} 
-      />
+      <>
+        <Auth 
+          onLogin={handleLogin} 
+          onOpenAdmin={() => setIsAdminView(true)} 
+        />
+        {customAlert && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm transition-all duration-300">
+            <div className={`bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform transition-all duration-300 scale-100 ${customAlert.type === 'error' ? 'shadow-rose-500/20' : customAlert.type === 'success' ? 'shadow-emerald-500/20' : 'shadow-indigo-500/20'}`}>
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${customAlert.type === 'error' ? 'bg-rose-100 text-rose-500' : customAlert.type === 'success' ? 'bg-emerald-100 text-emerald-500' : 'bg-indigo-100 text-indigo-500'}`}>
+                  {customAlert.type === 'error' ? <AlertCircle size={32} /> : customAlert.type === 'success' ? <CheckCircle2 size={32} /> : <Info size={32} />}
+                </div>
+                <p className="text-slate-800 font-medium whitespace-pre-wrap">{customAlert.message}</p>
+                <button 
+                  onClick={() => setCustomAlert(null)}
+                  className={`mt-4 w-full py-3 rounded-2xl font-bold text-white transition-all active:scale-[0.98] ${customAlert.type === 'error' ? 'bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/30' : customAlert.type === 'success' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30' : 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30'}`}
+                >
+                  OK / ঠিক আছে
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white pb-24">
+    <div className="max-w-md mx-auto min-h-screen bg-white pb-24 relative">
+      {/* Global Alerts inside main layout */}
+      {customAlert && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm transition-all duration-300">
+          <div className={`bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform transition-all duration-300 scale-100 ${customAlert.type === 'error' ? 'shadow-rose-500/20' : customAlert.type === 'success' ? 'shadow-emerald-500/20' : 'shadow-indigo-500/20'}`}>
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${customAlert.type === 'error' ? 'bg-rose-100 text-rose-500' : customAlert.type === 'success' ? 'bg-emerald-100 text-emerald-500' : 'bg-indigo-100 text-indigo-500'}`}>
+                {customAlert.type === 'error' ? <AlertCircle size={32} /> : customAlert.type === 'success' ? <CheckCircle2 size={32} /> : <Info size={32} />}
+              </div>
+              <p className="text-slate-800 font-medium whitespace-pre-wrap">{customAlert.message}</p>
+              <button 
+                onClick={() => setCustomAlert(null)}
+                className={`mt-4 w-full py-3 rounded-2xl font-bold text-white transition-all active:scale-[0.98] ${customAlert.type === 'error' ? 'bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/30' : customAlert.type === 'success' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30' : 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30'}`}
+              >
+                OK / ঠিক আছে
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome Bonus Popup */}
+      {showWelcomeBonus && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl transform transition-all duration-500 scale-100 opacity-100 animate-[bounce_0.6s_ease-out]">
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+              <div className="w-24 h-24 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/40 border-4 border-white animate-[pulse_2s_infinite]">
+                <Gift className="text-white w-12 h-12" />
+              </div>
+            </div>
+            
+            <div className="mt-12 text-center">
+              <div className="inline-block px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider mb-2">Registration Gift</div>
+              <h3 className="text-2xl font-black text-slate-800 mb-2">অভিনন্দন! 🎉</h3>
+              <p className="text-slate-500 font-medium mb-6">
+                সফলভাবে অ্যাকাউন্ট তৈরি করার জন্য আপনাকে <span className="font-bold text-slate-800">৫০ টাকা</span> ক্যাশ রিবোর্ড দেয়া হয়েছে।
+              </p>
+              
+              <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100">
+                <p className="text-slate-400 text-xs mb-1">বর্তমান ব্যালেন্স</p>
+                <div className="text-3xl font-black text-emerald-500">৳ ৫০</div>
+              </div>
+
+              <button 
+                onClick={() => setShowWelcomeBonus(false)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/30 active:scale-[0.98]"
+              >
+                ধন্যবাদ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Header balance={user?.balance || 0} toggleBalance={toggleBalance} showBalance={showBalance} />
       <main className="p-5">
         {page === 'home' && (

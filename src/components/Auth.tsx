@@ -49,7 +49,6 @@ export default function Auth({
       } else {
         // Automatically give 50 TK bonus upon registration
         userData = await registerUser(normalizedPhone, trimmedPassword, referredBy);
-        alert('🎉 স্বাগতম! আপনি ৫০ টাকা রেজিস্ট্রেশন বোনাস পেয়েছেন।');
       }
       onLogin(userData);
     } catch (error: any) {

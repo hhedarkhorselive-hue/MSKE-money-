@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { REFERRAL_POOL } from './referrals';
 
@@ -7,16 +7,20 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 export const assignNextCustomUid = async () => {
-  const usersRef = collection(db, 'users');
-  const allUsersSnap = await getDocs(usersRef);
-  const assignedUids: number[] = [1037829]; // our base starts at 1037830
-  allUsersSnap.forEach((uDoc) => {
-    const uData = uDoc.data();
-    if (uData.customUid && typeof uData.customUid === 'number') {
-      assignedUids.push(uData.customUid);
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, orderBy('customUid', 'desc'), limit(1));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const uData = snap.docs[0].data();
+      if (uData.customUid && typeof uData.customUid === 'number') {
+        return uData.customUid + 1;
+      }
     }
-  });
-  return Math.max(...assignedUids) + 1;
+  } catch (error) {
+    // If index doesn't exist yet, fallback to random assignment
+  }
+  return 1037830 + Math.floor(Math.random() * 800000);
 };
 
 export const registerUser = async (phone: string, password: string, referredBy: string) => {
@@ -43,26 +47,19 @@ export const registerUser = async (phone: string, password: string, referredBy: 
     }
   }
 
-  // Find a unique refer code from the REFERRAL_POOL
-  const usersRef = collection(db, 'users');
-  const allUsersSnap = await getDocs(usersRef);
-  const takenCodes = new Set<string>();
-  allUsersSnap.forEach((doc) => {
-    const data = doc.data();
-    if (data.referCode) {
-      takenCodes.add(data.referCode);
-    }
-  });
-
+  // Find a unique refer code quickly
   let assignedCode = '';
-  for (const code of REFERRAL_POOL) {
-    if (!takenCodes.has(code)) {
-      assignedCode = code;
+  for (let i = 0; i < 5; i++) {
+    const randomCode = REFERRAL_POOL[Math.floor(Math.random() * REFERRAL_POOL.length)];
+    const q = query(collection(db, 'users'), where('referCode', '==', randomCode), limit(1));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      assignedCode = randomCode;
       break;
     }
   }
 
-  // Fallback in case all 200 are occupied
+  // Fallback in case pool is full or checks failed
   if (!assignedCode) {
     assignedCode = Math.floor(1000000000 + Math.random() * 9000000000).toString();
   }
@@ -88,7 +85,7 @@ export const registerUser = async (phone: string, password: string, referredBy: 
     });
   }
 
-  return userData;
+  return { ...userData, isNewRegistration: true };
 };
 
 
@@ -317,9 +314,10 @@ export const claimNightlyBonus = async (phone: string, isTestOverride: boolean =
   const now = new Date();
   const currentHour = now.getHours();
 
-  if (!isTestOverride && currentHour < 20) {
-    throw new Error('এই বোনাসটি শুধুমাত্র প্রতিদিন রাত ০৮:০০ টার পর দাবি করা যাবে!');
-  }
+  // Removed time restriction as per user request
+  // if (!isTestOverride && currentHour < 20) {
+  //   throw new Error('এই বোনাসটি শুধুমাত্র প্রতিদিন রাত ০৮:০০ টার পর দাবি করা যাবে!');
+  // }
 
   const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
