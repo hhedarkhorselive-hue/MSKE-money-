@@ -84,8 +84,8 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
       return;
     }
     
-    // Find user in usersList by customUid (it can be number or string)
-    const found = usersList.find((u) => String(u.customUid || '').trim() === target);
+    // Find user in usersList by customUid (it can be number or string) or phone
+    const found = usersList.find((u) => String(u.customUid || '').trim() === target || String(u.phone || '').trim() === target);
     if (!found) {
       alert("❌ এই UID দিয়ে কোনো ব্যবহারকারী পাওয়া যায়নি!");
       setDiagnosedUser(null);
@@ -301,17 +301,18 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
           let dailyRate = 0;
           let dailyBonus = 0;
 
-          if (editPackageTitle === 'Bronze (৳১৫০)') {
-            price = 150; dailyRate = 15; dailyBonus = 1;
-          } else if (editPackageTitle === 'Silver (৳২৫০)') {
-            price = 250; dailyRate = 25; dailyBonus = 2;
-          } else if (editPackageTitle === 'Gold (৳৩০০)') {
-            price = 300; dailyRate = 30; dailyBonus = 3;
-          } else if (editPackageTitle === 'Platinum (৳৫০০)') {
-            price = 500; dailyRate = 40; dailyBonus = 5;
-          } else if (editPackageTitle === 'Diamond (৳৮৪০)') {
-            price = 840; dailyRate = 60; dailyBonus = 8;
+          if (editPackageTitle === 'সবুজ দ্বীপ প্যাকেজ (৳১৫০)') {
+            price = 150; dailyRate = 20; dailyBonus = 1;
+          } else if (editPackageTitle === 'রূপালী নদী প্যাকেজ (৳২৫০)') {
+            price = 250; dailyRate = 30; dailyBonus = 2;
+          } else if (editPackageTitle === 'সোনার হরিণ প্যাকেজ (৳৩০০)') {
+            price = 300; dailyRate = 40; dailyBonus = 3;
+          } else if (editPackageTitle === 'সাপের মণি শিব প্যাকেজ (৳৫০০)') {
+            price = 500; dailyRate = 60; dailyBonus = 5;
+          } else if (editPackageTitle === 'নীল সমুদ্র প্যাকেজ (৳৮০০)') {
+            price = 800; dailyRate = 80; dailyBonus = 8;
           }
+
 
           updates.hasActivePackage = true;
           updates.activePackageTitle = editPackageTitle.split(' ')[0];
@@ -338,11 +339,11 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
     }
   };
 
-  // Filter users list on query (strictly by UID)
+  // Filter users list on query (by UID or phone)
   const filteredUsers = usersList.filter((u) => {
     const q = searchQuery.trim();
     if (!q) return true;
-    return String(u.customUid || '').includes(q);
+    return String(u.customUid || '').includes(q) || String(u.phone || '').includes(q);
   });
 
   const pendingWithdraws = getPendingWithdrawals();
@@ -534,7 +535,7 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-slate-800">UID: {item.userUid}</span>
+                        <span className="text-xs font-black text-slate-800">UID: {item.userUid || 'N/A'}</span>
                         <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-mono">{item.userPhone}</span>
                       </div>
                       <p className="text-[9px] text-slate-400 font-mono mt-1">{item.date} • {item.time}</p>
@@ -598,7 +599,7 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
                 type="text" 
                 value={investigateUid}
                 onChange={(e) => setInvestigateUid(e.target.value)}
-                placeholder="ইউজার UID লিখুন (যেমন: 1037830)" 
+                placeholder="ইউজার UID বা ফোন নম্বর লিখুন (যেমন: 1037830 বা 01...)" 
                 className="flex-1 px-4 py-3 bg-white border border-indigo-200/70 rounded-xl text-xs font-bold outline-none focus:border-indigo-500 font-mono"
               />
               <button
@@ -656,7 +657,7 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="সংক্ষিপ্ত তালিকা ফিল্টার করতে ইউজার UID লিখুন..." 
+              placeholder="সংক্ষিপ্ত তালিকা ফিল্টার করতে ইউজার UID বা ফোন নম্বর লিখুন..." 
               className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:border-slate-400 placeholder:text-slate-400 font-sans"
             />
           </div>
@@ -679,7 +680,7 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
                 >
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-slate-800">UID: {item.customUid || '1037830'}</span>
+                      <span className="text-xs font-black text-slate-800">UID: {item.customUid || 'N/A'}</span>
                       <span className="text-[10px] px-1.5 bg-slate-100 text-slate-500 rounded font-mono font-bold">{item.phone}</span>
                     </div>
 
@@ -728,7 +729,7 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
                 <div key={idx} className="bg-white border border-slate-100 rounded-2.5xl p-4 shadow-xs flex justify-between items-center">
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-slate-800">UID: {item.userUid}</span>
+                      <span className="text-xs font-black text-slate-800">UID: {item.userUid || 'N/A'}</span>
                       <span className="text-[10px] text-slate-400 font-mono">({item.userPhone})</span>
                     </div>
                     <p className="text-[10px] text-indigo-600 font-mono font-bold mt-1">TxID: {item.txid}</p>
@@ -754,7 +755,7 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="font-extrabold text-slate-800 text-base">সম্পাদনা এবং ব্যালেন্স</h3>
-                <p className="text-xs text-slate-400 mt-0.5 font-bold">UID: {selectedUser.customUid} • {selectedUser.phone}</p>
+                <p className="text-xs text-slate-400 mt-0.5 font-bold">UID: {selectedUser.customUid || 'N/A'} • {selectedUser.phone}</p>
               </div>
               <button 
                 type="button" 
@@ -821,11 +822,11 @@ export default function Admin({ onClose, currentUser }: AdminProps) {
               >
                 <option value="">কোন পরিবর্তন নয়</option>
                 <option value="NONE">প্যাকেজ বাতিল (কোনো একটিভ প্যাকেজ নেই)</option>
-                <option value="Bronze (৳১৫০)">Bronze (৳১৫০ - ডেইলি ১৫৳ আয়)</option>
-                <option value="Silver (৳২৫০)">Silver (৳২৫০ - ডেইলি ২৫৳ আয়)</option>
-                <option value="Gold (৳৩০০)">Gold (৳৩০০ - ডেইলি ৩০৳ আয়)</option>
-                <option value="Platinum (৳৫০০)">Platinum (৳৫০০ - ডেইলি ৪০৳ আয়)</option>
-                <option value="Diamond (৳৮৪০)">Diamond (৳৮৪০ - ডেইলি ৬০৳ আয়)</option>
+                <option value="সবুজ দ্বীপ প্যাকেজ (৳১৫০)">Basic (৳১৫০ - ডেইলি ২০৳ আয়)</option>
+                <option value="রূপালী নদী প্যাকেজ (৳২৫০)">Standard (৳২৫০ - ডেইলি ৩০৳ আয়)</option>
+                <option value="সোনার হরিণ প্যাকেজ (৳৩০০)">Classic (৳৩০০ - ডেইলি ৪০৳ আয়)</option>
+                <option value="সাপের মণি শিব প্যাকেজ (৳৫০০)">Starter (৳৫০০ - ডেইলি ৬০৳ আয়)</option>
+                <option value="নীল সমুদ্র প্যাকেজ (৳৮০০)">Pro (৳৮০০ - ডেইলি ৮০৳ আয়)</option>
               </select>
             </div>
 

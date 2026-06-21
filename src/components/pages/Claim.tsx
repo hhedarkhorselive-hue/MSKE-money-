@@ -100,17 +100,15 @@ export default function Claim({ user, onUpdateUser }: { user: any; onUpdateUser:
             <span className="text-[10px] uppercase font-bold text-indigo-500">চলতি প্যাকেজ</span>
             <h3 className="font-extrabold text-slate-800 text-lg">{packageTitle}</h3>
           </div>
-          {purchasedPackages.length > 0 && (
-            <button 
-              onClick={() => setShowPackages(true)}
-              className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 active:scale-95 transition-transform"
-            >
-              <div className="bg-indigo-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]">
-                {purchasedPackages.length}
-              </div>
-              টি প্যাকেজ
-            </button>
-          )}
+          <button 
+            onClick={() => purchasedPackages?.length > 0 && setShowPackages(true)}
+            className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 active:scale-95 transition-transform"
+          >
+            <div className="bg-indigo-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]">
+              {purchasedPackages?.length || (hasActivePackage ? 1 : 0)}
+            </div>
+            টি প্যাকেজ
+          </button>
         </div>
         
         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/50">
@@ -119,10 +117,8 @@ export default function Claim({ user, onUpdateUser }: { user: any; onUpdateUser:
             <p className="font-extrabold text-emerald-600 text-xl font-mono">{hasActivePackage ? `${dailyIncomeRate} ৳` : '০.০০ ৳'}</p>
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase font-sans">সর্বশেষ ক্লেম</p>
-            <p className="font-bold text-slate-600 text-xs mt-1">
-              {alreadyClaimedToday ? 'আজ সম্পূর্ণ' : lastClaimedAt ? 'আগে সম্পূর্ণ' : 'কখনো নয়'}
-            </p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase">মোট ক্লেম আয়</p>
+            <p className="font-extrabold text-indigo-600 text-xl font-mono">{user?.totalDailyClaimedAmount || 0} ৳</p>
           </div>
         </div>
       </div>

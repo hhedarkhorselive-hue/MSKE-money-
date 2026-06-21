@@ -124,6 +124,28 @@ export const getUserDataByPhone = async (phone: string) => {
     let needsUpdate = false;
     const updatePayload: any = {};
 
+    // Fix dailyIncomeRate if missing or 0
+    if (data.hasActivePackage && (!data.dailyIncomeRate || data.dailyIncomeRate <= 0)) {
+      let dailyRate = 0;
+      if (data.purchasedPackages && data.purchasedPackages.length > 0) {
+        dailyRate = data.purchasedPackages.reduce((sum: number, pkg: any) => sum + (pkg.dailyRate || 0), 0);
+      }
+      if (dailyRate <= 0) {
+        const legacyPrice = data.packagePrice || 0;
+        if (legacyPrice === 150) dailyRate = 20;
+        else if (legacyPrice === 250) dailyRate = 30;
+        else if (legacyPrice === 300) dailyRate = 40;
+        else if (legacyPrice === 500) dailyRate = 60;
+        else if (legacyPrice === 800 || legacyPrice === 840) dailyRate = 80;
+        else dailyRate = Math.floor(legacyPrice / 10);
+      }
+      if (dailyRate > 0) {
+        updatePayload.dailyIncomeRate = dailyRate;
+        data.dailyIncomeRate = dailyRate;
+        needsUpdate = true;
+      }
+    }
+
     // Assign customUid sequentially if not already present
     if (!data.customUid || typeof data.customUid !== 'number') {
       const nextCustomUid = await assignNextCustomUid();
@@ -132,32 +154,12 @@ export const getUserDataByPhone = async (phone: string) => {
       needsUpdate = true;
     }
 
-    // If they have no refer code, or their refer code is not in the 200 REFERRAL_POOL,
-    // we automatically assign them a valid code from our REFERRAL_POOL!
-    if (!data.referCode || !REFERRAL_POOL.includes(data.referCode)) {
-      const usersRef = collection(db, 'users');
-      const allUsersSnap = await getDocs(usersRef);
-      const takenCodes = new Set<string>();
-      allUsersSnap.forEach((uDoc) => {
-        const uData = uDoc.data();
-        if (uData.referCode && REFERRAL_POOL.includes(uData.referCode)) {
-          takenCodes.add(uData.referCode);
-        }
-      });
-
-      let assignedCode = '';
-      for (const code of REFERRAL_POOL) {
-        if (!takenCodes.has(code)) {
-          assignedCode = code;
-          break;
-        }
-      }
-
-      if (assignedCode) {
-        updatePayload.referCode = assignedCode;
-        data.referCode = assignedCode;
-        needsUpdate = true;
-      }
+    // If they have no refer code, we automatically assign them a random code
+    if (!data.referCode) {
+      const assignedCode = 'REF' + Math.floor(1000 + Math.random() * 9000).toString();
+      updatePayload.referCode = assignedCode;
+      data.referCode = assignedCode;
+      needsUpdate = true;
     }
 
     if (needsUpdate) {
@@ -186,6 +188,27 @@ export const buyUserPackage = async (phone: string, price: number, packageTitle:
   const currentBalance = snap.data().balance || 0;
   const currentReferralBalance = snap.data().referralBalance || 0;
   
+  const existingPackages = snap.data().purchasedPackages || [];
+  if (snap.data().hasActivePackage === true && existingPackages.length === 0) {
+    // Migrate legacy single package
+    const legacyPrice = snap.data().packagePrice || 150;
+    const legacyRate = snap.data().dailyIncomeRate || 20;
+    const legacyTitle = snap.data().activePackageTitle || 'Level 1';
+    existingPackages.push({
+      id: 'legacy-' + Date.now().toString(),
+      title: legacyTitle,
+      price: legacyPrice,
+      dailyRate: legacyRate,
+      purchasedAt: snap.data().joinedAt || new Date().toISOString(),
+      claimedCount: 0,
+      totalEarned: 0
+    });
+  }
+
+  if (existingPackages.length >= 3) {
+    throw new Error('একটি একাউন্ট থেকে সর্বোচ্চ ৩টি প্যাকেজ কেনা যাবে!');
+  }
+
   if (currentBalance < price) {
     throw new Error(`আপনার ডিপোজিট বা কাজের ব্যালেন্স পর্যাপ্ত নেই! প্যাকেজের দাম ${price} ৳, আপনার ব্যালেন্স ${currentBalance} ৳। (রেফার বোনাস দিয়ে প্যাকেজ কেনা যায় না, ডিপোজিট করে প্যাকেজ কিনলে রেফার বোনাস মূল ব্যালেন্সে যোগ হবে)।`);
   }
@@ -197,16 +220,16 @@ export const buyUserPackage = async (phone: string, price: number, packageTitle:
     dailyRate = 20;
     dailyBonus = 1;
   } else if (price === 250) {
-    dailyRate = 25;
+    dailyRate = 30;
     dailyBonus = 2;
   } else if (price === 300) {
-    dailyRate = 30;
+    dailyRate = 40;
     dailyBonus = 3;
   } else if (price === 500) {
-    dailyRate = 40;
-    dailyBonus = 5;
-  } else if (price === 840) {
     dailyRate = 60;
+    dailyBonus = 5;
+  } else if (price === 800) {
+    dailyRate = 80;
     dailyBonus = 8;
   } else {
     // fallback
@@ -215,8 +238,6 @@ export const buyUserPackage = async (phone: string, price: number, packageTitle:
   }
   
   const balanceAfterPurchaseAndReferralUnlock = currentBalance - price + currentReferralBalance;
-
-  const existingPackages = snap.data().purchasedPackages || [];
   
   const newPackage = {
     id: Date.now().toString(),
@@ -300,7 +321,24 @@ export const claimDailyIncome = async (phone: string, isTestOverride: boolean = 
     throw new Error('আপনার কোনো একটিভ প্যাকেজ নেই! দয়া করে হোম থেকে প্যাকেজ কিনুন।');
   }
 
-  const dailyRate = data.dailyIncomeRate || 0;
+  let dailyRate = data.dailyIncomeRate || 0;
+  if (dailyRate <= 0) {
+    if (data.purchasedPackages && data.purchasedPackages.length > 0) {
+      dailyRate = data.purchasedPackages.reduce((sum: number, pkg: any) => sum + (pkg.dailyRate || 0), 0);
+    }
+  }
+
+  // legacy fallback
+  if (dailyRate <= 0) {
+    const legacyPrice = data.packagePrice || 0;
+    if (legacyPrice === 150) dailyRate = 20;
+    else if (legacyPrice === 250) dailyRate = 30;
+    else if (legacyPrice === 300) dailyRate = 40;
+    else if (legacyPrice === 500) dailyRate = 60;
+    else if (legacyPrice === 800 || legacyPrice === 840) dailyRate = 80;
+    else dailyRate = Math.floor(legacyPrice / 10);
+  }
+
   if (dailyRate <= 0) {
     throw new Error('আপনার একটিভ প্যাকেজের ডেইলি আয় নির্ধারণ করা হয়নি!');
   }
@@ -321,6 +359,7 @@ export const claimDailyIncome = async (phone: string, isTestOverride: boolean = 
 
   const currentBalance = data.balance || 0;
   const newBalance = currentBalance + dailyRate;
+  const newTotalClaimed = (data.totalDailyClaimedAmount || 0) + dailyRate;
 
   let updatedPurchasedPackages = data.purchasedPackages || [];
   updatedPurchasedPackages = updatedPurchasedPackages.map((pkg: any) => ({
@@ -331,6 +370,8 @@ export const claimDailyIncome = async (phone: string, isTestOverride: boolean = 
 
   await updateDoc(userRef, {
     balance: newBalance,
+    totalDailyClaimedAmount: newTotalClaimed,
+    dailyIncomeRate: dailyRate,
     lastClaimedDate: todayStr,
     lastClaimedAt: now.toISOString(),
     purchasedPackages: updatedPurchasedPackages
@@ -338,6 +379,7 @@ export const claimDailyIncome = async (phone: string, isTestOverride: boolean = 
 
   return {
     balance: newBalance,
+    totalDailyClaimedAmount: newTotalClaimed,
     lastClaimedDate: todayStr,
     lastClaimedAt: now.toISOString(),
     purchasedPackages: updatedPurchasedPackages
