@@ -121,7 +121,7 @@ export default function Claim({ user, onUpdateUser }: { user: any; onUpdateUser:
           <div>
             <p className="text-[10px] text-slate-400 font-bold uppercase font-sans">সর্বশেষ ক্লেম</p>
             <p className="font-bold text-slate-600 text-xs mt-1">
-              {alreadyClaimedToday ? 'আজ সম্পূর্ণ' : lastClaimedDate ? 'আগে সম্পূর্ণ' : 'কখনো নয়'}
+              {alreadyClaimedToday ? 'আজ সম্পূর্ণ' : lastClaimedAt ? 'আগে সম্পূর্ণ' : 'কখনো নয়'}
             </p>
           </div>
         </div>
@@ -149,6 +149,18 @@ export default function Claim({ user, onUpdateUser }: { user: any; onUpdateUser:
       )}
 
       <div className="max-w-sm mx-auto pt-2">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 flex justify-between items-center shadow-sm text-center">
+          <div className="flex-1">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">প্যাকেজ সংখ্যা</p>
+            <p className="text-xl font-extrabold text-indigo-600">{purchasedPackages?.length > 0 ? purchasedPackages.length : (hasActivePackage ? 1 : 0)} <span className="text-sm font-medium">টি</span></p>
+          </div>
+          <div className="w-px h-10 bg-slate-200"></div>
+          <div className="flex-1">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">দৈনিক ইনকাম</p>
+            <p className="text-xl font-extrabold text-emerald-600">{hasActivePackage ? dailyIncomeRate : 0} <span className="text-sm font-medium">৳</span></p>
+          </div>
+        </div>
+
         <button 
           onClick={handleClaim}
           disabled={loading || alreadyClaimedToday || (!isWithinTime && !testMode && hasActivePackage)}

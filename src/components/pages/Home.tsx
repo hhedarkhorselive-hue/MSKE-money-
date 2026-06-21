@@ -29,10 +29,10 @@ export default function Home({
 
   const packages = [
     { id: 3, title: 'সবুজ দ্বীপ প্যাকেজ', price: 150, daily: 20, duration: 365, tier: 'Basic', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80' },
-    { id: 4, title: 'রূপালী নদী প্যাকেজ', price: 250, daily: 25, duration: 365, tier: 'Standard', img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80' },
-    { id: 5, title: 'সোনার হরিণ প্যাকেজ', price: 300, daily: 30, duration: 365, tier: 'Classic', img: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=600&q=80' },
-    { id: 1, title: 'সাপের মণি শিব প্যাকেজ', price: 500, daily: 40, duration: 365, tier: 'Starter', img: 'https://i.postimg.cc/WbsmDYtg/file-0000000058387207abcc303bd37095ad.png' },
-    { id: 2, title: 'নীল সমুদ্র প্যাকেজ', price: 840, daily: 60, duration: 365, tier: 'Pro', img: 'https://i.postimg.cc/GhzFvPyb/file-0000000000f47206bf7ff53e391a87e1.png' },
+    { id: 4, title: 'রূপালী নদী প্যাকেজ', price: 250, daily: 30, duration: 365, tier: 'Standard', img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80' },
+    { id: 5, title: 'সোনার হরিণ প্যাকেজ', price: 300, daily: 40, duration: 365, tier: 'Classic', img: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=600&q=80' },
+    { id: 1, title: 'সাপের মণি শিব প্যাকেজ', price: 500, daily: 60, duration: 365, tier: 'Starter', img: 'https://i.postimg.cc/WbsmDYtg/file-0000000058387207abcc303bd37095ad.png' },
+    { id: 2, title: 'নীল সমুদ্র প্যাকেজ', price: 800, daily: 80, duration: 365, tier: 'Pro', img: 'https://i.postimg.cc/GhzFvPyb/file-0000000000f47206bf7ff53e391a87e1.png' },
   ];
 
   const handleBuyPackage = async (pkg: typeof packages[0]) => {
